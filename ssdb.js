@@ -1,11 +1,3 @@
-/**
- * Copyright (c) 2013, ideawu
- * All rights reserved.
- * @author: ideawu
- *
- * SSDB nodejs client SDK.
- */
-
 'use strict';
 
 const net = require('net');
@@ -217,93 +209,203 @@ SSDB.prototype.del = function (key, callback) {
     });
 }
 
-const commands = {
-    set: 'int',
-    setx: 'int',
-    expire: 'int',
-    ttl: 'int',
-    setnx: 'int',
-    get: 'str',
-    getset: 'str',
-    del: 'int',
-    incr: 'int',
-    exists: 'bool',
-    getbit: 'int',
-    setbit: 'int',
-    countbit: 'int',
-    substr: 'str',
-    strlen: 'int',
-    keys: 'list',
-    scan: 'list',
-    rscan: 'list',
-    multi_set: 'int',
-    multi_get: 'list',
-    multi_del: 'int',
-    hset: 'int',
-    hget: 'str',
-    hdel: 'int',
-    hincr: 'int',
-    hexists: 'bool',
-    hsize: 'int',
-    hlist: 'list',
-    hrlist: 'list',
-    hkeys: 'list',
-    hgetall: 'list',
-    hscan: 'list',
-    hrscan: 'list',
-    hclear: 'int',
-    multi_hset: 'int',
-    multi_hget: 'list',
-    multi_hdel: 'int',
-    zset: 'int',
-    zget: 'int',
-    zdel: 'int',
-    zincr: 'int',
-    zexists: 'bool',
-    zsize: 'int',
-    zlist: 'list',
-    zrlist: 'list',
-    zkeys: 'list',
-    zscan: 'list',
-    zrscan: 'list',
-    zrank: 'int',
-    zrrank: 'int',
-    zrange: 'list',
-    zrrange: 'list',
-    zclear: 'int',
-    zcount: 'int',
-    zsum: 'int',
-    zavg: 'float',
-    zremrangebyrank: 'int',
-    zremrangebyscore: 'int',
-    zpop_front: 'list',
-    zpop_back: 'list',
-    multi_zset: 'int',
-    multi_zget: 'list',
-    multi_zdel: 'int',
-    qsize: 'int',
-    qclear: 'int',
-    qfront: 'str',
-    qback: 'str',
-    qget: 'str',
-    qslice: 'list',
-    qpush: 'int',
-    qpush_front: 'int',
-    qpush_back: 'int',
-    qpop: 'str',
-    qpop_front: 'str',
-    qpop_back: 'str',
-    __qpop_front: 'list',
-    __qpop_back: 'list',
-    qlist: 'list',
-    qrange: 'list',
-    qrlist: 'list',
-    dbsize: 'int',
-    info: 'list',
-    auth: 'bool'
-};
+SSDB.prototype.scan = function(key_start, key_end, limit, callback){
+    request('scan', [key_start, key_end, limit], function(resp){
+        if(callback){
+            var err = resp[0] == 'ok'? 0 : resp[0];
+            if(resp.length % 2 != 1){
+                callback('error');
+            }else{
+                var data = {index: [], items: {}};
+                for(var i=1; i<resp.length; i+=2){
+                    var k = resp[i].toString();
+                    var v = resp[i+1].toString();
+                    data.index.push(k);
+                    data.items[k] = v;
+                }
+                callback(err, data);
+            }
+        }
+    });
+}
+
+SSDB.prototype.keys = function(key_start, key_end, limit, callback){
+    request('keys', [key_start, key_end, limit], function(resp){
+        if(callback){
+            var err = resp[0] == 'ok'? 0 : resp[0];
+            var data = [];
+            for(var i=1; i<resp.length; i++){
+                var k = resp[i].toString();
+                data.push(k);
+            }
+            callback(err, data);
+        }
+    });
+}
 
 
+SSDB.prototype.zget = function(name, key, callback){
+    request('zget', [name, key], function(resp){
+        if(callback){
+            var err = resp[0] == 'ok'? 0 : resp[0];
+            if(resp.length == 2){
+                var score = parseInt(resp[1]);
+                callback(err, score);
+            }else{
+                var score = 0;
+                callback('error');
+            }
+        }
+    });
+}
+
+SSDB.prototype.zsize = function(name, callback){
+    request('zsize', [name], function(resp){
+        if(callback){
+            var err = resp[0] == 'ok'? 0 : resp[0];
+            if(resp.length == 2){
+                var size = parseInt(resp[1]);
+                callback(err, size);
+            }else{
+                var score = 0;
+                callback('error');
+            }
+        }
+    });
+}
+
+SSDB.prototype.zset = function(name, key, score, callback){
+    request('zset', [name, key, score], function(resp){
+        if(callback){
+            var err = resp[0] == 'ok'? 0 : resp[0];
+            callback(err);
+        }
+    });
+}
+
+SSDB.prototype.zdel = function(name, key, callback){
+    request('zdel', [name, key], function(resp){
+        if(callback){
+            var err = resp[0] == 'ok'? 0 : resp[0];
+            callback(err);
+        }
+    });
+}
+
+SSDB.prototype.zscan = function(name, key_start, score_start, score_end, limit, callback){
+    request('zscan', [name, key_start, score_start, score_end, limit], function(resp){
+        if(callback){
+            var err = resp[0] == 'ok'? 0 : resp[0];
+            if(resp.length % 2 != 1){
+                callback('error');
+            }else{
+                var data = {index: [], items: {}};
+                for(var i=1; i<resp.length; i+=2){
+                    var k = resp[i].toString();
+                    var v = parseInt(resp[i+1]);
+                    data.index.push(k);
+                    data.items[k] = v;
+                }
+                callback(err, data);
+            }
+        }
+    });
+}
+
+SSDB.prototype.zsum = function(name, score_start, score_end, callback){
+    request('zsum', [name,score_start,score_end], function(resp){
+        if(callback){
+            var err = resp[0] == 'ok'? 0 : resp[0];
+            if(resp.length == 2){
+                var size = parseInt(resp[1]);
+                callback(err, size);
+            }else{
+                callback('error');
+            }
+        }
+    });
+}
+
+SSDB.prototype.zlist = function(name_start, name_end, limit, callback){
+    request('zlist', [name_start, name_end, limit], function(resp){
+        if(callback){
+            var err = resp[0] == 'ok'? 0 : resp[0];
+            var data = [];
+            for(var i=1; i<resp.length; i++){
+                var k = resp[i].toString();
+                data.push(k);
+            }
+            callback(err, data);
+        }
+    });
+}
+
+SSDB.prototype.hset = function(name, key, val, callback){
+    request('hset', [name, key, val], function(resp){
+        if(callback){
+            var err = resp[0] == 'ok'? 0 : resp[0];
+            callback(err);
+        }
+    });
+}
+
+SSDB.prototype.hdel = function(name, key, callback){
+    request('hdel', [name, key], function(resp){
+        if(callback){
+            var err = resp[0] == 'ok'? 0 : resp[0];
+            callback(err);
+        }
+    });
+}
+
+SSDB.prototype.hscan = function(name, key_start, key_end, limit, callback){
+    request('hscan', [name, key_start, key_end, limit], function(resp){
+        if(callback){
+            var err = resp[0] == 'ok'? 0 : resp[0];
+            if(resp.length % 2 != 1){
+                callback('error');
+            }else{
+                var data = {index: [], items: {}};
+                for(var i=1; i<resp.length; i+=2){
+                    var k = resp[i].toString();
+                    var v = resp[i+1].toString();
+                    data.index.push(k);
+                    data.items[k] = v;
+                }
+                callback(err, data);
+            }
+        }
+    });
+}
+
+SSDB.prototype.hlist = function(name_start, name_end, limit, callback){
+    request('hlist', [name_start, name_end, limit], function(resp){
+        if(callback){
+            var err = resp[0] == 'ok'? 0 : resp[0];
+            var data = [];
+            for(var i=1; i<resp.length; i++){
+                var k = resp[i].toString();
+                data.push(k);
+            }
+            callback(err, data);
+        }
+    });
+}
+
+SSDB.prototype.hsize = function(name, callback){
+    request('hsize', [name], function(resp){
+        if(callback){
+            var err = resp[0] == 'ok'? 0 : resp[0];
+            if(resp.length == 2){
+                var size = parseInt(resp[1]);
+                callback(err, size);
+            }else{
+                var score = 0;
+                callback('error');
+            }
+        }
+    });
+}
 
 /*
 example:
