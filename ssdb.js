@@ -56,7 +56,7 @@ function request(cmd, params, callback) {
     send_request(arr);
 }
 
-SSDB.prototype.connect = function (host, port, timeout, listener) {
+SSDB.prototype.client = function (host, port, timeout, listener) {
     var connected = false;
 
     if (typeof (timeout) == 'function') {
@@ -242,7 +242,6 @@ SSDB.prototype.keys = function (key_start, key_end, limit, callback) {
     });
 }
 
-
 SSDB.prototype.zget = function (name, key, callback) {
     request('zget', [name, key], function (resp) {
         if (callback) {
@@ -406,4 +405,4 @@ SSDB.prototype.hsize = function (name, callback) {
     });
 }
 
-module.exports = SSDB
+exports = module.exports = SSDB;
